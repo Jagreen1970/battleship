@@ -33,10 +33,12 @@ func (c *Controller) Register(engine *gin.Engine) {
 		api.GET("/logout", c.Logout)
 		api.GET("/scoreboard", c.Scoreboard)
 		api.GET("/games", c.Games)
-		api.GET("/games/:id", c.GetGame)
 		api.POST("/games", c.CreateGame)
-		api.POST("/games/:id/pin", c.PlacePin)
-		api.DELETE("/games/:id/pin", c.RecoverPin)
-		api.POST("/games/:id/shoot", c.Shoot)
+		api.GET("/games/:id", c.GetGame)
+		api.PATCH("/games/:id", c.JoinGame)
+		api.PUT("/games/:id/pin/:pin", c.PlacePin)
+		api.DELETE("/games/:id/pin/:pin", c.RecoverPin)
+		api.GET("/games/:id/start", c.StartGame)
+		api.POST("/games/:id/target", c.Target)
 	}
 }

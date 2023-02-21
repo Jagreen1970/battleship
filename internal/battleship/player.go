@@ -1,7 +1,7 @@
-package game
+package battleship
 
 type Player struct {
 	Name  string `json:"name"`
-	ID    int    `json:"id"`
+	ID    string `json:"id"`
 	Score int    `json:"score"`
 }

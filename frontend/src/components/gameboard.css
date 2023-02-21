@@ -1,0 +1,48 @@
+
+div.ships-map {
+    display: table;
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+div.map-index-row {
+    display: table-header-group;
+}
+
+div.map-body {
+    display: table-row-group
+}
+
+div.map-index-cell {
+    width: 3rem;
+    height: 3rem;
+
+    display: table-cell;
+    font-weight: bold;
+
+    border: 1px solid;
+
+    text-align: center;
+    vertical-align: middle;
+}
+
+div.map-row {
+    display: table-row;
+    height: 3rem;
+}
+
+div.map-cell {
+    display: table-cell;
+    vertical-align: middle;
+
+    height: 3rem;
+    width: 3rem;
+
+    border: 1px solid;
+}
+
+img.pin {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+}

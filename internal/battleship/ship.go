@@ -1,4 +1,4 @@
-package game
+package battleship
 
 import (
 	"fmt"
@@ -70,6 +70,13 @@ func NewShip(x int, y int) *Ship {
 		Parts: ShipParts{
 			NewShipPart(x, y, FieldStatePin),
 		},
+	}
+}
+
+func NewShipWithParts(parts ShipParts) *Ship {
+	return &Ship{
+		ShipType: UnknownShip,
+		Parts:    parts,
 	}
 }
 

@@ -1,11 +1,14 @@
 package endpoints
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Jagreen1970/battleship/internal/battleship"
 )
 
 func (c *Controller) Login(context *gin.Context) {
@@ -29,7 +32,7 @@ func (c *Controller) Login(context *gin.Context) {
 		playerName = l.Username
 	} else {
 		playerName = v.(string)
-		context.JSON(http.StatusUnauthorized, fmt.Errorf("you are already logged in as player %q", playerName))
+		context.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("you are already logged in as player %q", playerName)})
 		return
 	}
 	session.Set(sessionKeyPlayerName, playerName)
@@ -38,5 +41,11 @@ func (c *Controller) Login(context *gin.Context) {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	context.JSON(http.StatusOK, gin.H{"playerName": playerName})
+
+	player, err := c.gameAPI.GetPlayer(playerName)
+	if player == nil && errors.Is(err, battleship.ErrorNotFound) {
+		player, err = c.gameAPI.NewPlayer(playerName)
+	}
+
+	context.JSON(http.StatusOK, player)
 }

@@ -2,7 +2,8 @@ package database
 
 import (
 	"github.com/Jagreen1970/battleship/internal/app"
-	"github.com/Jagreen1970/battleship/internal/game"
+	"github.com/Jagreen1970/battleship/internal/battleship"
+	"github.com/Jagreen1970/battleship/internal/database/mongodb"
 )
 
 type Error string
@@ -21,13 +22,19 @@ type Database interface {
 	Ping() error
 	Close() error
 
-	FindPlayerByName(username string) (game.Player, error)
+	CreatePlayer(playerName string) (*battleship.Player, error)
+	FindPlayerByName(username string) (*battleship.Player, error)
+
+	QueryGames(page int, count int) ([]*battleship.Game, error)
+	CreateGame(game *battleship.Game) (*battleship.Game, error)
+	FindGameByID(id string) (*battleship.Game, error)
+	UpdateGame(game *battleship.Game) (*battleship.Game, error)
 }
 
 func New() (Database, error) {
 	switch app.DatabaseDriver() {
 	case "mongo":
-		return newMongoDB()
+		return mongodb.NewMongoDB()
 	}
 
 	return nil, UnknownDatabaseError

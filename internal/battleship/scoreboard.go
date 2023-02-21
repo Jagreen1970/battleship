@@ -1,10 +1,10 @@
-package game
+package battleship
 
 type ScoreBoard struct {
 	Scores []Player `json:"scores"`
 }
 
-func NewScoreBoard() *ScoreBoard {
+func NewScoreBoard(_ string) *ScoreBoard {
 	return &ScoreBoard{
 		Scores: []Player{
 			{

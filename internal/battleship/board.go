@@ -1,14 +1,16 @@
-package game
+package battleship
 
 import (
+	"errors"
 	"fmt"
+	"log"
 )
 
 type Board struct {
-	PinsAvailable int
-	ShotsMap      [10][10]FieldState `json:"shots_map"`
-	ShipsMap      [10][10]FieldState `json:"ships_map"`
-	Fleet         Ships              `json:"fleet"`
+	PinsAvailable int                `json:"pins_available" bson:"pins_available"`
+	ShotsMap      [10][10]FieldState `json:"shots_map" bson:"shots_map"`
+	ShipsMap      [10][10]FieldState `json:"ships_map" bson:"ships_map"`
+	Fleet         Ships              `json:"fleet" bson:"fleet"`
 }
 
 func NewBoard() *Board {
@@ -17,6 +19,26 @@ func NewBoard() *Board {
 		ShotsMap:      [10][10]FieldState{},
 		ShipsMap:      [10][10]FieldState{},
 	}
+}
+
+// ValidSetup checks if the board is in a valid setup state. Not all pins need to be placed yet, but any placed pin has to be
+// in a valid position.
+func (b *Board) ValidSetup() error {
+	if len(b.Fleet) == 0 {
+		return nil
+	}
+
+	if len(b.Fleet) > FleetSizeAllowed {
+		return fmt.Errorf("too many ships: %d (%w)", len(b.Fleet), ErrorIllegal)
+	}
+
+	for shipType, numAllowed := range shipsAllowed {
+		if shipType != UnknownShip && len(b.Fleet.Filter(byShipType(shipType))) > numAllowed {
+			return fmt.Errorf("too many ships of type: %q (%w)", shipType, ErrorIllegal)
+		}
+	}
+
+	return nil
 }
 
 func (b *Board) CanAttack(x int, y int) error {
@@ -42,7 +64,7 @@ func (b *Board) Attack(x int, y int) (FieldState, error) {
 
 	sunk := s.Hit(x, y)
 	if sunk {
-		b.Fleet.Remove(ship(s))
+		b.Fleet.Remove(theShip(s))
 	}
 	b.ShipsMap[x][y] = FieldStateHit
 	return FieldStateHit, nil
@@ -80,11 +102,93 @@ func (b *Board) PlacePin(x int, y int) error {
 		b.addNewShip(x, y)
 		return nil
 	}
+
 	return b.mergeToNewShip(x, y)
 }
 
+func (b *Board) RecoverPin(x int, y int) error {
+	if b.PinsAvailable >= 30 {
+		return fmt.Errorf("you have already recovered all your pins (%w)", ErrorInvalid)
+	}
+
+	if !b.isLegalRecovery(x, y) {
+		return fmt.Errorf("you are not allowed to recover the pin in position: %d, %d. (%w)", x, y, ErrorIllegal)
+	}
+	b.PinsAvailable++
+	b.ShipsMap[x][y] = FieldStateEmpty
+
+	if b.isolatedPlacement(x, y) {
+		b.removeShip(x, y)
+		return nil
+	}
+
+	return b.shortenOrSplitShip(x, y)
+}
+
+func (b *Board) isLegalRecovery(x int, y int) bool {
+	if b.ShipsMap[x][y] != FieldStatePin {
+		return false
+	}
+
+	if b.isolatedPlacement(x, y) {
+		return true
+	}
+
+	return b.canShortenOrSplitShip(x, y)
+}
+
+func (b *Board) canShortenOrSplitShip(x int, y int) bool {
+	ships := b.Fleet.Filter(byPosition(x, y))
+	l := len(ships)
+	if l != 1 {
+		return false
+	}
+
+	s := ships[0]
+	if s.ShipType == UnknownShip || s.ShipType == InvalidShip {
+		return false
+	}
+
+	return true
+}
+
+func (b *Board) shortenOrSplitShip(x int, y int) error {
+	ships := b.Fleet.Filter(byPosition(x, y))
+	l := len(ships)
+	if l != 1 {
+		return fmt.Errorf("cannot shorten or split ship: must have exactly 1 ship")
+	}
+
+	s := ships[0]
+	if s.ShipType == InvalidShip || s.ShipType == UnknownShip {
+		return fmt.Errorf("cannot shorten or split ship: invalid ship type")
+	}
+
+	b.removeShip(x, y)
+	for i, part := range s.Parts {
+		if !part.Is(x, y) {
+			continue
+		}
+
+		p1, p2 := s.Parts[:i+1], s.Parts[i+1:]
+		if len(p1) != 0 {
+			s1 := NewShipWithParts(p1)
+			s1.AdjustProperties()
+			b.Fleet = append(b.Fleet, s1)
+		}
+		if len(p2) != 0 {
+			s2 := NewShipWithParts(p2)
+			s2.AdjustProperties()
+			b.Fleet = append(b.Fleet, s2)
+		}
+		break
+	}
+
+	return nil
+}
+
 func (b *Board) isLegalPlacement(x int, y int) bool {
-	if b.isIllegalPinPosition(x, y) {
+	if b.isIllegalPinPlacement(x, y) {
 		return false
 	}
 
@@ -98,7 +202,7 @@ func (b *Board) isLegalPlacement(x int, y int) bool {
 	return b.canMergeToNewShip(x, y)
 }
 
-func (b *Board) isIllegalPinPosition(x int, y int) bool {
+func (b *Board) isIllegalPinPlacement(x int, y int) bool {
 	// Pin is off-board
 	if b.offBoard(x, y) {
 		return true
@@ -172,6 +276,15 @@ func (b *Board) anyDiagonalsOccupied(x int, y int) bool {
 
 func (b *Board) addNewShip(x int, y int) {
 	b.Fleet = append(b.Fleet, NewShip(x, y))
+}
+
+func (b *Board) removeShip(x int, y int) {
+	s := b.Fleet.Filter(byPosition(x, y))
+	if len(s) != 1 {
+		log.Fatal(errors.New("must filter exactly one ship"))
+		return
+	}
+	b.Fleet.Remove(theShip(s[0]))
 }
 
 func (b *Board) canMergeToNewShip(x int, y int) bool {

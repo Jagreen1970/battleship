@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Jagreen1970/battleship/internal/game"
 	"log"
 
+	"github.com/Jagreen1970/battleship/internal/battleship"
 	"github.com/Jagreen1970/battleship/internal/database"
 	"github.com/Jagreen1970/battleship/internal/http/endpoints"
 	"github.com/Jagreen1970/battleship/internal/http/server"
@@ -22,7 +22,17 @@ func main() {
 		}
 	}(db)
 
-	gameApi := game.NewApi(db)
+	err = db.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gameApi := battleship.NewApi(db)
 	c := endpoints.NewController(gameApi)
 
 	// Setup http server

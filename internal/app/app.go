@@ -2,12 +2,16 @@ package app
 
 import "time"
 
+func Name() string {
+	return "battleship"
+}
+
 func DatabaseDriver() string {
 	return "mongo"
 }
 
 func DatabaseURL() string {
-	return "mongodb://localhost:27017"
+	return "localhost:27017"
 }
 
 func DatabaseTimeout() time.Duration {

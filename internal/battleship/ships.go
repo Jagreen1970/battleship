@@ -1,4 +1,13 @@
-package game
+package battleship
+
+var shipsAllowed = map[ShipType]int{
+	BattleShip: 1,
+	Cruiser:    2,
+	Destroyer:  3,
+	Submarine:  4,
+}
+
+const FleetSizeAllowed = 10
 
 type Ships []*Ship
 
@@ -22,7 +31,7 @@ func (f Ships) Remove(predicate func(*Ship) bool) Ships {
 	return result
 }
 
-func ship(s *Ship) func(*Ship) bool {
+func theShip(s *Ship) func(*Ship) bool {
 	return func(sh *Ship) bool {
 		return s == sh
 	}
@@ -37,5 +46,11 @@ func byAdjacentPosition(x, y int) func(s *Ship) bool {
 func byPosition(x, y int) func(s *Ship) bool {
 	return func(s *Ship) bool {
 		return s.IsAtPosition(x, y)
+	}
+}
+
+func byShipType(shipType ShipType) func(*Ship) bool {
+	return func(s *Ship) bool {
+		return s.ShipType == shipType
 	}
 }

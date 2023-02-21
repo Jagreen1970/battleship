@@ -24,5 +24,5 @@ func New() *gin.Engine {
 }
 
 func handleNoRoute(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", "")
+	c.Redirect(http.StatusMovedPermanently, "/")
 }
