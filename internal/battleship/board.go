@@ -6,19 +6,41 @@ import (
 	"log"
 )
 
-type Board struct {
-	PinsAvailable int                `json:"pins_available" bson:"pins_available"`
-	ShotsMap      [10][10]FieldState `json:"shots_map" bson:"shots_map"`
-	ShipsMap      [10][10]FieldState `json:"ships_map" bson:"ships_map"`
-	Fleet         Ships              `json:"fleet" bson:"fleet"`
+type BoardMap struct {
+	Title string       `json:"title"`
+	Map   [10]FieldRow `json:"map"`
 }
 
-func NewBoard() *Board {
-	return &Board{
+func (m *BoardMap) FieldState(x int, y int) FieldState {
+	return m.Map[x][y]
+}
+
+func (m *BoardMap) Set(x int, y int, fieldState FieldState) {
+	m.Map[x][y] = fieldState
+}
+
+type Board struct {
+	PinsAvailable int          `json:"pins_available" bson:"pins_available"`
+	Maps          [2]*BoardMap `json:"maps" bson:"maps"`
+	Fleet         Ships        `json:"fleet" bson:"fleet"`
+}
+
+func NewBoard(playerName, opponentName string) *Board {
+	b := Board{
 		PinsAvailable: 30,
-		ShotsMap:      [10][10]FieldState{},
-		ShipsMap:      [10][10]FieldState{},
+		Maps:          [2]*BoardMap{},
+		Fleet:         nil,
 	}
+	b.Maps[0] = &BoardMap{
+		Title: playerName,
+		Map:   [10]FieldRow{},
+	}
+	b.Maps[1] = &BoardMap{
+		Title: opponentName,
+		Map:   [10]FieldRow{},
+	}
+
+	return &b
 }
 
 // ValidSetup checks if the board is in a valid setup state. Not all pins need to be placed yet, but any placed pin has to be
@@ -53,7 +75,7 @@ func (b *Board) CanAttack(x int, y int) error {
 }
 
 func (b *Board) Attack(x int, y int) (FieldState, error) {
-	if b.ShipsMap[x][y] != FieldStatePin {
+	if b.ShipsMap().FieldState(x, y) != FieldStatePin {
 		return FielStateMiss, nil
 	}
 
@@ -66,12 +88,12 @@ func (b *Board) Attack(x int, y int) (FieldState, error) {
 	if sunk {
 		b.Fleet.Remove(theShip(s))
 	}
-	b.ShipsMap[x][y] = FieldStateHit
+	b.ShipsMap().Set(x, y, FieldStateHit)
 	return FieldStateHit, nil
 }
 
 func (b *Board) Track(fieldState FieldState, x int, y int) {
-	b.ShotsMap[x][y] = fieldState
+	b.ShotsMap().Set(x, y, fieldState)
 }
 
 func (b *Board) ShipAtPosition(x int, y int) (*Ship, error) {
@@ -96,7 +118,7 @@ func (b *Board) PlacePin(x int, y int) error {
 	}
 
 	b.PinsAvailable--
-	b.ShipsMap[x][y] = FieldStatePin
+	b.ShipsMap().Set(x, y, FieldStatePin)
 
 	if b.isolatedPlacement(x, y) {
 		b.addNewShip(x, y)
@@ -115,7 +137,7 @@ func (b *Board) RecoverPin(x int, y int) error {
 		return fmt.Errorf("you are not allowed to recover the pin in position: %d, %d. (%w)", x, y, ErrorIllegal)
 	}
 	b.PinsAvailable++
-	b.ShipsMap[x][y] = FieldStateEmpty
+	b.ShipsMap().Set(x, y, FieldStateEmpty)
 
 	if b.isolatedPlacement(x, y) {
 		b.removeShip(x, y)
@@ -126,7 +148,7 @@ func (b *Board) RecoverPin(x int, y int) error {
 }
 
 func (b *Board) isLegalRecovery(x int, y int) bool {
-	if b.ShipsMap[x][y] != FieldStatePin {
+	if b.ShipsMap().FieldState(x, y) != FieldStatePin {
 		return false
 	}
 
@@ -209,7 +231,7 @@ func (b *Board) isIllegalPinPlacement(x int, y int) bool {
 	}
 
 	// Position is already taken
-	if b.ShipsMap[x][y] != FieldStateEmpty {
+	if b.ShipsMap().FieldState(x, y) != FieldStateEmpty {
 		return true
 	}
 
@@ -227,7 +249,7 @@ func (b *Board) isolatedPlacement(x int, y int) bool {
 			if (i == x && j == y) || b.offBoard(i, j) {
 				continue
 			}
-			if b.ShipsMap[i][j] == FieldStatePin {
+			if b.ShipsMap().Map[i][j] == FieldStatePin {
 				return false
 			}
 		}
@@ -244,13 +266,13 @@ func (b *Board) anyDiagonalsOccupied(x int, y int) bool {
 	if l >= 0 {
 		if u >= 0 {
 			// upper left
-			if b.ShipsMap[l][u] == FieldStatePin {
+			if b.ShipsMap().Map[l][u] == FieldStatePin {
 				return true
 			}
 		}
 		if d < 10 {
 			// lower left
-			if b.ShipsMap[l][d] == FieldStatePin {
+			if b.ShipsMap().Map[l][d] == FieldStatePin {
 				return true
 			}
 		}
@@ -259,13 +281,13 @@ func (b *Board) anyDiagonalsOccupied(x int, y int) bool {
 	if r < 10 {
 		if u >= 0 {
 			// upper right
-			if b.ShipsMap[r][u] == FieldStatePin {
+			if b.ShipsMap().Map[r][u] == FieldStatePin {
 				return true
 			}
 		}
 		if d < 10 {
 			// lower right
-			if b.ShipsMap[r][d] == FieldStatePin {
+			if b.ShipsMap().Map[r][d] == FieldStatePin {
 				return true
 			}
 		}
@@ -325,9 +347,17 @@ func (b *Board) offBoard(x int, y int) bool {
 }
 
 func (b *Board) alreadyTried(x int, y int) bool {
-	return b.ShotsMap[x][y] != FieldStateEmpty
+	return b.ShotsMap().FieldState(x, y) != FieldStateEmpty
 }
 
 func (b *Board) Lost() bool {
 	return len(b.Fleet) == 0
+}
+
+func (b *Board) ShotsMap() *BoardMap {
+	return b.Maps[1]
+}
+
+func (b *Board) ShipsMap() *BoardMap {
+	return b.Maps[0]
 }

@@ -34,8 +34,10 @@ const Game = () => {
         status: "1",
         board: {
             pins_available: 0,
-            shots_map: DummyShotsMapAlison,
-            ships_map: DummyShipsMapAlison,
+            maps: [
+                {title: "Alison", map: DummyShipsMapAlison},
+                {title: "Bob", map: DummyShotsMapAlison}
+            ],
             fleet: [
                 {
                     ship_type: "Submarine",
@@ -51,18 +53,16 @@ const Game = () => {
         },
     });
 
-    function fetchStats() {
-        fetch(`/api/games/${game_id}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log(data)
-                setGameStats(data)
-            })
-    }
+    console.log(game_id);
 
     useEffect(() => {
-        fetchStats()
-    }, [])
+        axios.get(`/api/games/${game_id}`)
+            .then(r => {
+                console.log(r.data)
+                setGameStats(r.data)
+            })
+            .catch(e => console.log(e))
+    }, [game_id])
 
     function shipCellClicked(row_index, cell_index) {
         return () => {
@@ -70,16 +70,15 @@ const Game = () => {
                 return
             }
             let call;
-            if(gameStats.board.ships_map[row_index][cell_index] === " ") {
-                call = axios.put("/api/game/" + gameStats._id + "/pin/" + row_index + "-" + cell_index)
+            if(gameStats.board.maps["Ships"][row_index][cell_index] === " ") {
+                call = axios.put("/api/games/" + gameStats._id + "/pin/" + row_index + "-" + cell_index)
             } else if(gameStats.board.ships_map[row_index][cell_index] === "O") {
-                call = axios.delete("/api/game/" + gameStats._id + "/pin/" + row_index + "-" + cell_index)
+                call = axios.delete("/api/games/" + gameStats._id + "/pin/" + row_index + "-" + cell_index)
             }
             call.then((res) => {
+                console.log(res)
                 if(res.status === 200) {
                     setGameStats(res.data)
-                } else {
-                    console.log(res)
                 }
             }).catch(
                 (error) => {
@@ -95,11 +94,12 @@ const Game = () => {
                 return
             }
 
-            if(gameStats.board.ships_map[row_index][cell_index] !== " ") {
+            if(gameStats.board.maps[1].map[row_index][cell_index] !== " ") {
+                // already shot on that one
                 return;
             }
 
-            axios.post("/api/game/" + gameStats._id + "/target", {
+            axios.post("/api/games/" + gameStats._id + "/target", {
                 x: row_index,
                 y: cell_index
             }).then((res) => {
@@ -116,14 +116,67 @@ const Game = () => {
         }
     }
 
+    function gameStateSetup(status) {
+        return status === "0"
+    }
+
+    function gameStatePlying(status) {
+        return status === "1"
+    }
+
+    function isMyTurn(user) {
+        return gameStats.player_to_move === user
+    }
+
+    function isPlayer(user) {
+        return user === gameStats.player_1.name || user === gameStats.player_2.name;
+    }
+
+    function isOpponentMap(map_name) {
+        if (!isPlayer(gameStats.user)) {
+            return false
+        }
+        return map_name !== gameStats.user
+    }
+
+    function onCellClicked (map_name) {
+        return (row_index, cell_index) => {
+            if (gameStatePlying(gameStats.status)
+                && isPlayer(gameStats.user)
+                && isMyTurn(gameStats.user)
+                && isOpponentMap(map_name)) {
+                return targetCellClicked(row_index, cell_index)
+            }
+
+            if (gameStats.status === "0" && map_name === gameStats.user) {
+                return shipCellClicked(row_index, cell_index)
+            }
+        }
+    }
+
+    function isMapDisabled (map_name) {
+        return () => {
+            if (!isPlayer(gameStats.user)) {
+                return true
+            }
+
+            if (gameStatePlying(gameStats.status) && isOpponentMap(map_name)) {
+                return false
+            }
+
+            return !(gameStateSetup(gameStats.status) && !isOpponentMap(map_name));
+
+        }
+    }
+
     return (
         <Container>
             <GameStats {...gameStats}/>
             <GameBoard
                 isStatusPlaying={gameStats.status === "1"}
                 my_turn={gameStats.player_to_move === gameStats.user}
-                shipCellClicked={shipCellClicked}
-                targetCellClicked={targetCellClicked}
+                onCellClicked={onCellClicked}
+                isMapDisabled={isMapDisabled}
                 {...gameStats.board}/>
         </Container>
     )

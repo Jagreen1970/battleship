@@ -5,8 +5,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import Container from "react-bootstrap/Container";
 
-import {memo} from "react";
-
 import Layout from "./components/layout";
 import Games from "./components/games";
 import Game from "./components/game";
@@ -24,15 +22,16 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Layout/>}>
-                    <Route exact path="/games" element={<Games/>}/>
-                    <Route path="/games/:id" element={<Game/>}/>
+                <Route path={process.env.PUBLIC_URL} element={<Layout/>}>
+                    <Route path="/games/:game_id" element={<Game/>}/>
+                    <Route path="/games" element={<Games/>}/>
                     <Route path="/scoreboard" element={<Scoreboard/>}/>
                     <Route path="/about" element={<About/>}/>
+                    <Route index element={<Games/>}/>
                 </Route>
             </Routes>
         </BrowserRouter>
     );
 }
 
-export default memo(App);
+export default App;

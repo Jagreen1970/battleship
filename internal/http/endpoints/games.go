@@ -18,7 +18,21 @@ func (c *Controller) Games(context *gin.Context) {
 		context.JSON(mapErrorToStatusErr(err))
 		return
 	}
-	context.JSON(http.StatusOK, games)
+
+	user := playerFromSession(context)
+	if user == "" {
+		user = "guest"
+	}
+
+	response := struct {
+		Games []*battleship.Game `json:"games"`
+		User  string             `json:"user"`
+	}{
+		Games: games,
+		User:  user,
+	}
+
+	context.JSON(http.StatusOK, response)
 }
 
 func (c *Controller) GetGame(context *gin.Context) {
@@ -36,11 +50,11 @@ func (c *Controller) GetGame(context *gin.Context) {
 
 	player := playerFromSession(context)
 	if player == "" {
-		context.JSON(http.StatusOK, mapToViewerPerspective(game))
+		context.JSON(http.StatusOK, viewerPerspective(game))
 		return
 	}
 
-	context.JSON(http.StatusOK, mapToPlayerPerspective(player, game))
+	context.JSON(http.StatusOK, playerPerspective(player, game))
 }
 
 func (c *Controller) CreateGame(context *gin.Context) {
@@ -56,7 +70,7 @@ func (c *Controller) CreateGame(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusCreated, mapToPlayerPerspective(player, game))
+	context.JSON(http.StatusCreated, playerPerspective(player, game))
 }
 
 func (c *Controller) JoinGame(context *gin.Context) {
@@ -95,7 +109,7 @@ func (c *Controller) JoinGame(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusAccepted, mapToPlayerPerspective(playerName, game))
+	context.JSON(http.StatusAccepted, playerPerspective(playerName, game))
 }
 
 type position struct {
@@ -148,7 +162,7 @@ func (c *Controller) PlacePin(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusCreated, mapToPlayerPerspective(playerName, game))
+	context.JSON(http.StatusCreated, playerPerspective(playerName, game))
 }
 
 func (c *Controller) RecoverPin(context *gin.Context) {
@@ -190,7 +204,7 @@ func (c *Controller) RecoverPin(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusCreated, mapToPlayerPerspective(playerName, game))
+	context.JSON(http.StatusCreated, playerPerspective(playerName, game))
 }
 
 func (c *Controller) StartGame(context *gin.Context) {
@@ -224,7 +238,7 @@ func (c *Controller) StartGame(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, mapToPlayerPerspective(playerName, game))
+	context.JSON(http.StatusOK, playerPerspective(playerName, game))
 }
 
 func (c *Controller) Target(context *gin.Context) {
@@ -266,10 +280,10 @@ func (c *Controller) Target(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, mapToPlayerPerspective(playerName, g))
+	context.JSON(http.StatusOK, playerPerspective(playerName, g))
 }
 
-type playerGame struct {
+type gameView struct {
 	ID      string            `json:"_id,omitempty"`
 	User    string            `json:"user"`
 	Board   *battleship.Board `json:"board"`
@@ -281,8 +295,8 @@ type playerGame struct {
 	PlayerToMove string             `json:"player_to_move"`
 }
 
-func mapToPlayerPerspective(name string, g *battleship.Game) playerGame {
-	return playerGame{
+func playerPerspective(name string, g *battleship.Game) gameView {
+	return gameView{
 		ID:      g.ID,
 		User:    name,
 		Board:   g.Boards[name],
@@ -295,20 +309,8 @@ func mapToPlayerPerspective(name string, g *battleship.Game) playerGame {
 	}
 }
 
-type viewerGame struct {
-	ID      string            `json:"_id,omitempty"`
-	User    string            `json:"user"`
-	Board   *battleship.Board `json:"board"`
-	History []battleship.Move `json:"history"`
-	Status  battleship.Status `json:"status"`
-
-	Player1      *battleship.Player `json:"player_1"`
-	Player2      *battleship.Player `json:"player_2"`
-	PlayerToMove string             `json:"player_to_move"`
-}
-
-func mapToViewerPerspective(game *battleship.Game) viewerGame {
-	return viewerGame{
+func viewerPerspective(game *battleship.Game) gameView {
+	return gameView{
 		ID:           game.ID,
 		User:         "guest",
 		Board:        makeViewerBoard(game),
@@ -325,9 +327,18 @@ func makeViewerBoard(game *battleship.Game) *battleship.Board {
 		return nil
 	}
 
-	var board *battleship.Board
-	board.ShipsMap = game.Boards[game.Player1.Name].ShipsMap
-	board.ShotsMap = game.Boards[game.Player2.Name].ShipsMap
+	if game.Boards[game.Player2.Name] == nil {
+		game.Boards[game.Player2.Name] = battleship.NewBoard(game.Player2.Name, game.Player1.Name)
+	}
+
+	board := &battleship.Board{
+		PinsAvailable: 0,
+		Maps: [2]*battleship.BoardMap{
+			game.Boards[game.Player2.Name].ShotsMap(),
+			game.Boards[game.Player1.Name].ShotsMap(),
+		},
+		Fleet: nil,
+	}
 
 	return board
 }

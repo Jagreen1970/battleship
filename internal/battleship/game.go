@@ -30,14 +30,15 @@ const (
 	StatusLost
 )
 
-type FieldState string
+type FieldState byte
+type FieldRow [10]FieldState
 
 const (
-	FieldStateUnknown FieldState = "!"
-	FieldStateEmpty   FieldState = " "
-	FieldStatePin     FieldState = "O"
-	FieldStateHit     FieldState = "X"
-	FielStateMiss     FieldState = "-"
+	FieldStateUnknown FieldState = '!'
+	FieldStateEmpty   FieldState = ' '
+	FieldStatePin     FieldState = 'O'
+	FieldStateHit     FieldState = 'X'
+	FielStateMiss     FieldState = '-'
 )
 
 type Game struct {
@@ -55,12 +56,25 @@ func NewGame(player1 *Player) *Game {
 	g := Game{
 		Status:  StatusSetup,
 		Player1: player1,
+		Player2: &Player{
+			Name: "nobody",
+		},
 	}
-	g.Boards = make(map[string]*Board)
-	g.Boards[player1.Name] = NewBoard()
-	g.History = make([]Move, 0)
+
+	g.InitBoards()
+	g.InitHistory()
 
 	return &g
+}
+
+func (g *Game) InitBoards() {
+	g.Boards = make(map[string]*Board)
+	g.Boards[g.Player1.Name] = NewBoard(g.Player1.Name, g.Player2.Name)
+	g.Boards[g.Player2.Name] = NewBoard(g.Player2.Name, g.Player1.Name)
+}
+
+func (g *Game) InitHistory() {
+	g.History = make([]Move, 0)
 }
 
 func (g *Game) Join(player2 *Player) error {
@@ -76,7 +90,7 @@ func (g *Game) Join(player2 *Player) error {
 		return fmt.Errorf("seems you already joined the game, %s: %w", player2.Name, ErrorIllegal)
 	}
 
-	g.Boards[player2.Name] = NewBoard()
+	g.Boards[player2.Name] = NewBoard(player2.Name, g.Player1.Name)
 	g.Player2 = player2
 	return nil
 }

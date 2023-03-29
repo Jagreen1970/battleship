@@ -14,16 +14,14 @@ const PlayerRankList = () => {
     });
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get("/api/scoreboard");
-                console.log(response.data);
-                setPlayers(response.data);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-        fetchData();
+        axios.get("/api/scoreboard")
+            .then(res => {
+                console.log(res.data);
+                setPlayers(res.data);
+            })
+            .catch(
+                err => console.log(err)
+            )
     }, []);
 
     return (

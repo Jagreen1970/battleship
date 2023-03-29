@@ -1,8 +1,8 @@
-import {Outlet} from "react-router-dom";
+import {Link, Outlet} from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
 import Nav from "react-bootstrap/Nav";
-import {memo} from "react";
+import {NavLink} from "react-bootstrap";
 
 function Navigation() {
     return (
@@ -13,13 +13,13 @@ function Navigation() {
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">
                         <Nav.Item>
-                            <Nav.Link href="/games">Games</Nav.Link>
+                            <NavLink as={Link} to="/games">Games</NavLink>
                         </Nav.Item>
                         <Nav.Item>
-                            <Nav.Link href="/scoreboard">Scoreboard</Nav.Link>
+                            <NavLink as={Link} to="/scoreboard">Scoreboard</NavLink>
                         </Nav.Item>
                         <Nav.Item>
-                            <Nav.Link href="/about">About</Nav.Link>
+                            <NavLink as={Link} to="/about">About</NavLink>
                         </Nav.Item>
                     </Nav>
                 </Navbar.Collapse>
@@ -38,12 +38,12 @@ function Header() {
 
 const Layout = () => {
     return (
-        <>
+        <Container>
             <Header />
             <Navigation />
             <Outlet />
-        </>
+        </Container>
     )
 }
 
-export default memo(Layout)
+export default Layout
