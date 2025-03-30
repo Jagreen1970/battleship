@@ -2,9 +2,11 @@ package endpoints
 
 import (
 	"fmt"
-	"github.com/Jagreen1970/battleship/internal/battleship"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/Jagreen1970/battleship/internal/game"
 )
 
 const DefaultGamesPerPage = 10
@@ -25,8 +27,8 @@ func (c *Controller) Games(context *gin.Context) {
 	}
 
 	response := struct {
-		Games []*battleship.Game `json:"games"`
-		User  string             `json:"user"`
+		Games []*game.Game `json:"games"`
+		User  string       `json:"user"`
 	}{
 		Games: games,
 		User:  user,
@@ -254,7 +256,7 @@ func (c *Controller) Target(context *gin.Context) {
 		return
 	}
 
-	var move battleship.Move
+	var move game.Move
 	err := context.ShouldBindJSON(&move)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -284,18 +286,18 @@ func (c *Controller) Target(context *gin.Context) {
 }
 
 type gameView struct {
-	ID      string            `json:"_id,omitempty"`
-	User    string            `json:"user"`
-	Board   *battleship.Board `json:"board"`
-	History []battleship.Move `json:"history"`
-	Status  battleship.Status `json:"status"`
+	ID      string      `json:"_id,omitempty"`
+	User    string      `json:"user"`
+	Board   *game.Board `json:"board"`
+	History []game.Move `json:"history"`
+	Status  game.Status `json:"status"`
 
-	Player1      *battleship.Player `json:"player_1"`
-	Player2      *battleship.Player `json:"player_2"`
-	PlayerToMove string             `json:"player_to_move"`
+	Player1      *game.Player `json:"player_1"`
+	Player2      *game.Player `json:"player_2"`
+	PlayerToMove string       `json:"player_to_move"`
 }
 
-func playerPerspective(name string, g *battleship.Game) gameView {
+func playerPerspective(name string, g *game.Game) gameView {
 	return gameView{
 		ID:      g.ID,
 		User:    name,
@@ -309,7 +311,7 @@ func playerPerspective(name string, g *battleship.Game) gameView {
 	}
 }
 
-func viewerPerspective(game *battleship.Game) gameView {
+func viewerPerspective(game *game.Game) gameView {
 	return gameView{
 		ID:           game.ID,
 		User:         "guest",
@@ -322,23 +324,24 @@ func viewerPerspective(game *battleship.Game) gameView {
 	}
 }
 
-func makeViewerBoard(game *battleship.Game) *battleship.Board {
-	if game == nil {
+func makeViewerBoard(g *game.Game) *game.Board {
+	if g == nil {
 		return nil
 	}
 
-	if game.Boards[game.Player2.Name] == nil {
-		game.Boards[game.Player2.Name] = battleship.NewBoard(game.Player2.Name, game.Player1.Name)
-	}
-
-	board := &battleship.Board{
+	board := &game.Board{
 		PinsAvailable: 0,
-		Maps: [2]*battleship.BoardMap{
-			game.Boards[game.Player2.Name].ShotsMap(),
-			game.Boards[game.Player1.Name].ShotsMap(),
+		Maps: [2]*game.BoardMap{
+			{
+				Title: "shots",
+				Map:   [10]game.FieldRow{},
+			},
+			{
+				Title: "ships",
+				Map:   [10]game.FieldRow{},
+			},
 		},
 		Fleet: nil,
 	}
-
 	return board
 }

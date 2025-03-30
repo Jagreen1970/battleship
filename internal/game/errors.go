@@ -1,4 +1,4 @@
-package battleship
+package game
 
 import "errors"
 

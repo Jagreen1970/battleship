@@ -1,7 +1,7 @@
-package battleship
+package game
 
 var shipsAllowed = map[ShipType]int{
-	BattleShip: 1,
+	Battleship: 1,
 	Cruiser:    2,
 	Destroyer:  3,
 	Submarine:  4,

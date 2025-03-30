@@ -1,4 +1,4 @@
-package battleship
+package game
 
 import (
 	"fmt"
@@ -30,15 +30,17 @@ const (
 	StatusLost
 )
 
-type FieldState byte
-type FieldRow [10]FieldState
+type (
+	FieldState byte
+	FieldRow   [10]FieldState
+)
 
 const (
 	FieldStateUnknown FieldState = '!'
 	FieldStateEmpty   FieldState = ' '
 	FieldStatePin     FieldState = 'O'
 	FieldStateHit     FieldState = 'X'
-	FielStateMiss     FieldState = '-'
+	FieldStateMiss    FieldState = '-'
 )
 
 type Game struct {
@@ -70,7 +72,6 @@ func NewGame(player1 *Player) *Game {
 func (g *Game) InitBoards() {
 	g.Boards = make(map[string]*Board)
 	g.Boards[g.Player1.Name] = NewBoard(g.Player1.Name, g.Player2.Name)
-	g.Boards[g.Player2.Name] = NewBoard(g.Player2.Name, g.Player1.Name)
 }
 
 func (g *Game) InitHistory() {
@@ -95,34 +96,30 @@ func (g *Game) Join(player2 *Player) error {
 	return nil
 }
 
-func (g *Game) PlacePin(playerName string, x int, y int) error {
+func (g *Game) PlaceShip(playerName string, shipType ShipType, x, y int, orientation ShipOrientation) error {
 	if g.Status != StatusSetup {
-		return fmt.Errorf("you are not allowed to set a pin: %w", ErrorIllegal)
+		return fmt.Errorf("you are not allowed to place ships now: %w", ErrorIllegal)
 	}
 
-	var err error
-	if board, ok := g.Boards[playerName]; ok {
-		err = board.PlacePin(x, y)
-	} else {
-		return fmt.Errorf("you are not allowed to place a pin: %w", ErrorIllegal)
+	board, ok := g.Boards[playerName]
+	if !ok {
+		return fmt.Errorf("player not found: %w", ErrorIllegal)
 	}
 
-	return err
+	return board.PlaceShip(shipType, x, y, orientation)
 }
 
-func (g *Game) RecoverPin(playerName string, x int, y int) error {
+func (g *Game) RemoveShip(playerName string, x int, y int) error {
 	if g.Status != StatusSetup {
-		return fmt.Errorf("you are not allowed to recover a pin: %w", ErrorIllegal)
+		return fmt.Errorf("you are not allowed to remove a ship: %w", ErrorIllegal)
 	}
 
-	var err error
-	if board, ok := g.Boards[playerName]; ok {
-		err = board.RecoverPin(x, y)
-	} else {
-		return fmt.Errorf("you are not allowed to recover a pin: %w", ErrorIllegal)
+	board, ok := g.Boards[playerName]
+	if !ok {
+		return fmt.Errorf("you are not allowed to remove a ship: %w", ErrorIllegal)
 	}
 
-	return err
+	return board.RemoveShip(x, y)
 }
 
 func (g *Game) Start(playerName string) error {

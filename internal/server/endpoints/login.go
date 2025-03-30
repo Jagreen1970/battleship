@@ -8,7 +8,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
-	"github.com/Jagreen1970/battleship/internal/battleship"
+	"github.com/Jagreen1970/battleship/internal/game"
 )
 
 func (c *Controller) Login(context *gin.Context) {
@@ -43,8 +43,12 @@ func (c *Controller) Login(context *gin.Context) {
 	}
 
 	player, err := c.gameAPI.GetPlayer(playerName)
-	if player == nil && errors.Is(err, battleship.ErrorNotFound) {
+	if player == nil && errors.Is(err, game.ErrorNotFound) {
 		player, err = c.gameAPI.NewPlayer(playerName)
+	}
+	if err != nil {
+		context.JSON(mapErrorToStatusErr(err))
+		return
 	}
 
 	context.JSON(http.StatusOK, player)

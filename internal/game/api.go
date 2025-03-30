@@ -1,4 +1,4 @@
-package battleship
+package game
 
 import "errors"
 
@@ -26,10 +26,10 @@ func (A *API) NewPlayer(playerName string) (*Player, error) {
 	if err == nil {
 		return player, err
 	}
-	if err != nil && errors.Is(err, ErrorNotFound) {
+	if errors.Is(err, ErrorNotFound) {
 		player, err = A.db.CreatePlayer(playerName)
 	}
-	return player, nil
+	return player, err
 }
 
 func (A *API) NewGame(player string) (*Game, error) {
