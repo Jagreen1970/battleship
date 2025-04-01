@@ -11,7 +11,10 @@ type Database interface {
 	QueryGames(page int, count int) ([]*Game, error)
 	CreateGame(game *Game) (*Game, error)
 	FindGameByID(id string) (*Game, error)
+	FindGameByName(name string) (*Game, error)
 	UpdateGame(g *Game) (*Game, error)
+	DeleteGame(id string) error
+	DeleteAllGames() (int, error)
 }
 
 type Move struct {
@@ -45,6 +48,7 @@ const (
 
 type Game struct {
 	ID      string            `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name    string            `json:"name,omitempty" bson:"name,omitempty"`
 	Boards  map[string]*Board `json:"boards" bson:"boards"`
 	History []Move            `json:"history" bson:"history"`
 	Status  Status            `json:"status" bson:"status"`
@@ -54,13 +58,18 @@ type Game struct {
 	PlayerToMove string  `json:"player_to_move" bson:"player_to_move"`
 }
 
-func NewGame(player1 *Player) *Game {
+func NewGame(player1 *Player, name ...string) *Game {
 	g := Game{
 		Status:  StatusSetup,
 		Player1: player1,
 		Player2: &Player{
 			Name: "nobody",
 		},
+	}
+
+	// Set optional name if provided
+	if len(name) > 0 && name[0] != "" {
+		g.Name = name[0]
 	}
 
 	g.InitBoards()
@@ -210,6 +219,21 @@ func (g *Game) UpdateGameState() {
 
 	if g.Boards[g.Player2.Name].Lost() {
 		g.Status = StatusWon
+	}
+}
+
+// Print prints an ASCII representation of the game state
+func (g *Game) Print() {
+	fmt.Println("Game state:")
+	fmt.Println("Player 1:", g.Player1.Name)
+	fmt.Println("Player 2:", g.Player2.Name)
+	fmt.Println("Status:", g.Status)
+	fmt.Println("Player to move:", g.PlayerToMove)
+	fmt.Println("History:", g.History)
+
+	for playerName, board := range g.Boards {
+		fmt.Println("Board for", playerName)
+		board.Print()
 	}
 }
 

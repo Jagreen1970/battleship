@@ -21,7 +21,10 @@ type Storage interface {
 	QueryGames(page int, count int) ([]*game.Game, error)
 	CreateGame(game *game.Game) (*game.Game, error)
 	FindGameByID(id string) (*game.Game, error)
+	FindGameByName(name string) (*game.Game, error)
 	UpdateGame(game *game.Game) (*game.Game, error)
+	DeleteGame(id string) error
+	DeleteAllGames() (int, error)
 }
 
 // New creates a new storage instance based on the configuration

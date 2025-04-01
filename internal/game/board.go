@@ -10,11 +10,26 @@ type BoardMap struct {
 }
 
 func (m *BoardMap) FieldState(x int, y int) FieldState {
-	return m.Map[x][y]
+	// IMPORTANT: In this codebase, the convention is that:
+	// - In the Map data structure, the first index is the row (y) and the second is the column (x)
+	// - But in the API and user-facing commands, we use (x,y) where x is horizontal and y is vertical
+	// So we need to swap the coordinates when accessing the internal map
+	return m.Map[y][x]
 }
 
 func (m *BoardMap) Set(x int, y int, fieldState FieldState) {
-	m.Map[x][y] = fieldState
+	// Same coordinate conversion as in FieldState
+	m.Map[y][x] = fieldState
+}
+
+func (m *BoardMap) Print() {
+	fmt.Println(m.Title)
+	for _, row := range m.Map {
+		for _, field := range row {
+			fmt.Printf("%c", field)
+		}
+		fmt.Println()
+	}
 }
 
 type Board struct {
@@ -47,8 +62,8 @@ func NewBoard(playerName, opponentName string) *Board {
 	return &b
 }
 
-// ValidSetup checks if the board is in a valid setup state. Not all pins need to be placed yet, but any placed pin has to be
-// in a valid position.
+// ValidSetup checks if the board is in a valid setup state. Not all ships need to be placed yet, but any
+// placed ship has to be in a valid position.
 func (b *Board) ValidSetup() error {
 	if len(b.Fleet) == 0 {
 		return nil
@@ -67,6 +82,10 @@ func (b *Board) ValidSetup() error {
 	return nil
 }
 
+// CanAttack checks if an attack can be made at the specified coordinates.
+// Returns nil if the attack is valid, otherwise returns an error with the reason:
+// - ErrorInvalid if coordinates are outside the 10x10 board
+// - ErrorIllegal if the position was already attacked
 func (b *Board) CanAttack(x int, y int) error {
 	if b.offBoard(x, y) {
 		return fmt.Errorf("shot (%d, %d) is off board: %w", x, y, ErrorInvalid)
@@ -78,11 +97,35 @@ func (b *Board) CanAttack(x int, y int) error {
 	return nil
 }
 
+// Attack processes an attack at the specified coordinates (x,y) and returns the result.
+// Returns:
+// - FieldStateMiss and nil if no ship was hit
+// - FieldStateHit and nil if a ship was hit
+// - FieldStateUnknown and error if ship lookup fails
+//
+// The method:
+// 1. Checks if there's a ship pin at the coordinates
+// 2. Locates the ship at those coordinates
+// 3. Records the hit on the ship
+// 4. Removes the ship from fleet if sunk
+// 5. Updates the board state
 func (b *Board) Attack(x int, y int) (FieldState, error) {
+	// Check if position is valid
+	if b.offBoard(x, y) {
+		return FieldStateUnknown, fmt.Errorf("shot (%d, %d) is off board: %w", x, y, ErrorInvalid)
+	}
+
+	// Check if the position was already hit before
+	if b.ShipsMap().FieldState(x, y) == FieldStateHit {
+		return FieldStateUnknown, fmt.Errorf("already tried to shoot at (%d, %d): %w", x, y, ErrorIllegal)
+	}
+
+	// Check if there's a ship pin at the coordinates
 	if b.ShipsMap().FieldState(x, y) != FieldStatePin {
 		return FieldStateMiss, nil
 	}
 
+	// Locate the ship at those coordinates
 	s, err := b.ShipAtPosition(x, y)
 	if err != nil {
 		return FieldStateUnknown, fmt.Errorf("no ship found at position (%d, %d): %w", x, y, err)
@@ -96,6 +139,8 @@ func (b *Board) Attack(x int, y int) (FieldState, error) {
 	return FieldStateHit, nil
 }
 
+// Track records the result of an attack on the shots map at the specified coordinates.
+// The fieldState parameter indicates the outcome (hit, miss, etc.) of the attack.
 func (b *Board) Track(fieldState FieldState, x int, y int) {
 	b.ShotsMap().Set(x, y, fieldState)
 }
@@ -149,6 +194,9 @@ func (b *Board) PlaceShip(shipType ShipType, x, y int, orientation ShipOrientati
 }
 
 func increment(x int, y int, vertical bool) (int, int) {
+	// The original issue is that when vertical=true, we should increment y,
+	// and when vertical=false (horizontal), we should increment x.
+	// This matches the ShipOrientation constants in ship.go.
 	if vertical {
 		y++
 	} else {
@@ -258,4 +306,11 @@ func (b *Board) ShotsMap() *BoardMap {
 
 func (b *Board) ShipsMap() *BoardMap {
 	return b.Maps[0]
+}
+
+func (b *Board) Print() {
+	fmt.Println("Ships map:")
+	b.ShipsMap().Print()
+	fmt.Println("Shots map:")
+	b.ShotsMap().Print()
 }

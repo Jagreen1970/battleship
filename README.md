@@ -40,6 +40,17 @@ The application will be available at:
 - Game: http://localhost:3000
 - MongoDB Express: http://localhost:8081
 
+### CLI Mode
+
+The application also offers a command-line interface for testing and debugging:
+
+```bash
+# Run in CLI mode
+./battleship --cli --dbuser root --dbpass battleship
+```
+
+See [CLI Documentation](internal/cli/readme.md) for detailed information on available commands and features.
+
 ### Development Setup
 
 ```bash

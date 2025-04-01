@@ -32,13 +32,13 @@ func (A *API) NewPlayer(playerName string) (*Player, error) {
 	return player, err
 }
 
-func (A *API) NewGame(player string) (*Game, error) {
+func (A *API) NewGame(player string, name string) (*Game, error) {
 	p, err := A.db.FindPlayerByName(player)
 	if err != nil {
 		return nil, err
 	}
 
-	game, err := A.db.CreateGame(NewGame(p))
+	game, err := A.db.CreateGame(NewGame(p, name))
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +63,20 @@ func (A *API) GetGame(id string) (*Game, error) {
 	return A.db.FindGameByID(id)
 }
 
+func (A *API) GetGameByName(name string) (*Game, error) {
+	return A.db.FindGameByName(name)
+}
+
 func (A *API) ScoreBoard(playerName string) (*ScoreBoard, error) {
 	return NewScoreBoard(playerName), nil
+}
+
+// DeleteGame deletes a game by ID
+func (A *API) DeleteGame(id string) error {
+	return A.db.DeleteGame(id)
+}
+
+// DeleteAllGames deletes all games
+func (A *API) DeleteAllGames() (int, error) {
+	return A.db.DeleteAllGames()
 }
