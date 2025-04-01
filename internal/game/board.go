@@ -133,7 +133,7 @@ func (b *Board) Attack(x int, y int) (FieldState, error) {
 
 	sunk := s.Hit(x, y)
 	if sunk {
-		b.Fleet.Remove(theShip(s))
+		b.Fleet = b.Fleet.Remove(theShip(s))
 	}
 	b.ShipsMap().Set(x, y, FieldStateHit)
 	return FieldStateHit, nil
@@ -226,7 +226,7 @@ func (b *Board) RemoveShip(x int, y int) error {
 
 	b.clearShipFromMap(ship)
 
-	// Remove the ship from the fleet
+	// Remove the ship from the fleet and update the fleet reference
 	b.Fleet = b.Fleet.Remove(theShip(ship))
 
 	// Return pins to available pool
