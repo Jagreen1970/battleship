@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/Jagreen1970/battleship/internal/app"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,25 +12,42 @@ import (
 
 type MongoDB struct {
 	client *mongo.Client
+	dbName string
 	cfg    app.DatabaseConfig
 }
 
 func NewMongoDB(cfg app.DatabaseConfig) (*MongoDB, error) {
-	clientOptions := options.Client().ApplyURI(cfg.URL)
+	// Create the connection URI
+	uri := cfg.URL
 	if cfg.User != "" && cfg.Password != "" {
-		clientOptions.SetAuth(options.Credential{
-			Username: cfg.User,
-			Password: cfg.Password,
-		})
+		// Parse the existing URL to extract host and path components
+		parsedURL, err := url.Parse(cfg.URL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid MongoDB URL: %w", err)
+		}
+		
+		host := parsedURL.Host
+		
+		// Create the connection URI with authentication credentials
+		uri = fmt.Sprintf("mongodb://%s:%s@%s/%s?authSource=admin",
+			url.QueryEscape(cfg.User),
+			url.QueryEscape(cfg.Password),
+			host,
+			cfg.Name,
+		)
 	}
+
+	clientOptions := options.Client().ApplyURI(uri)
+	clientOptions.SetTimeout(cfg.Timeout)
 
 	client, err := mongo.NewClient(clientOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create MongoDB client: %v", err)
+		return nil, fmt.Errorf("failed to create MongoDB client: %w", err)
 	}
 
 	return &MongoDB{
 		client: client,
+		dbName: cfg.Name,
 		cfg:    cfg,
 	}, nil
 }
@@ -39,7 +57,7 @@ func (m *MongoDB) Connect() error {
 	defer cancel()
 
 	if err := m.client.Connect(ctx); err != nil {
-		return fmt.Errorf("failed to connect to MongoDB: %v", err)
+		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
 
 	return nil
@@ -70,3 +88,5 @@ func (m *MongoDB) Ping() error {
 func (m *MongoDB) Close() error {
 	return m.Disconnect()
 }
+
+// NOTE: Other implementations like FindPlayerByName are in player.go and game.go

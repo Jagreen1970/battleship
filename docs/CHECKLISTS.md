@@ -171,4 +171,29 @@
 - [ ] Metrics analyzed
 - [ ] Alerts configured
 - [ ] Performance monitored
-- [ ] Issues tracked 
+- [ ] Issues tracked
+
+## CLI Mode Checklist
+
+### Implementation
+- [ ] Basic command interface
+- [ ] Input validation
+- [ ] Error handling
+- [ ] Game state display
+- [ ] Interactive mode
+- [ ] Command history
+- [ ] Help documentation
+
+### Testing
+- [ ] Command parsing tests
+- [ ] Input validation tests
+- [ ] Display formatting tests
+- [ ] Integration tests
+- [ ] Error handling tests
+
+### Documentation
+- [ ] CLI usage guide
+- [ ] Command reference
+- [ ] Example workflows
+- [ ] Troubleshooting guide
+- [ ] Configuration options

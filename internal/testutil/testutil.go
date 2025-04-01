@@ -15,10 +15,12 @@ func NewTestConfig() app.Config {
 			Timeout: 5 * time.Second,
 		},
 		Database: app.DatabaseConfig{
-			Driver:  "mongo",
-			URL:     "mongodb://localhost:27017",
-			Name:    "battleship_test",
-			Timeout: 5 * time.Second,
+			Driver:   "mongo",
+			URL:      "mongodb://localhost:27017",
+			Name:     "battleship_test",
+			Timeout:  5 * time.Second,
+			User:     "root",       // Add MongoDB authentication
+			Password: "battleship", // Add MongoDB authentication
 		},
 	}
 }

@@ -17,7 +17,11 @@ type Player struct {
 
 // CreatePlayer creates a new player in the database
 func (m *MongoDB) CreatePlayer(playerName string) (*game.Player, error) {
+	// Generate a new ObjectID
+	objID := primitive.NewObjectID()
+	
 	player := Player{
+		ID: objID,  // Set the generated ID
 		Player: &game.Player{
 			Name: playerName,
 		},
@@ -28,12 +32,13 @@ func (m *MongoDB) CreatePlayer(playerName string) (*game.Player, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.cfg.Timeout)
 	defer cancel()
 
-	result, err := collection.InsertOne(ctx, &player)
+	_, err := collection.InsertOne(ctx, &player)
 	if err != nil {
 		return nil, fmt.Errorf("error creating player: %w", err)
 	}
 
-	player.Player.ID = result.InsertedID.(primitive.ObjectID).Hex()
+	// Set the ID from the generated ObjectID
+	player.Player.ID = objID.Hex()
 	return player.Player, nil
 }
 

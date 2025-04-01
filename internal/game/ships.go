@@ -37,12 +37,6 @@ func theShip(s *Ship) func(*Ship) bool {
 	}
 }
 
-func byAdjacentPosition(x, y int) func(s *Ship) bool {
-	return func(s *Ship) bool {
-		return s.IsNextToPosition(x, y)
-	}
-}
-
 func byPosition(x, y int) func(s *Ship) bool {
 	return func(s *Ship) bool {
 		return s.IsAtPosition(x, y)

@@ -146,12 +146,6 @@ func (c *Controller) PlacePin(context *gin.Context) {
 		return
 	}
 
-	err = game.PlacePin(playerName, pin.X, pin.Y)
-	if err != nil {
-		context.JSON(mapErrorToStatusErr(err))
-		return
-	}
-
 	err = game.ValidSetup()
 	if err != nil {
 		context.JSON(mapErrorToStatusErr(err))
@@ -189,12 +183,6 @@ func (c *Controller) RecoverPin(context *gin.Context) {
 	}
 
 	game, err := c.gameAPI.GetGame(gameID)
-	if err != nil {
-		context.JSON(mapErrorToStatusErr(err))
-		return
-	}
-
-	err = game.RecoverPin(playerName, pin.X, pin.Y)
 	if err != nil {
 		context.JSON(mapErrorToStatusErr(err))
 		return

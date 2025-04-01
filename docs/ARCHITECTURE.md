@@ -14,6 +14,10 @@ internal/
 │   ├── config.go       # Configuration management
 │   └── config_test.go  # Configuration tests
 │
+├── cli/                # CLI mode implementation
+│   ├── cli.go         # CLI interface
+│   └── cli_test.go    # CLI tests
+│
 ├── game/               # Game logic and models
 │   ├── game.go        # Game state and rules
 │   ├── player.go      # Player management
@@ -45,6 +49,14 @@ The application core that:
 - Provides configuration validation
 - Defines configuration defaults
 - Handles environment variable loading
+
+### `internal/cli`
+The CLI interface that:
+- Provides command-line interface
+- Handles user input
+- Displays game state
+- Manages game interactions
+- Implements interactive mode
 
 ### `internal/game`
 The game logic layer that:

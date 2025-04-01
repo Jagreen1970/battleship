@@ -139,6 +139,35 @@ internal/
    - Implement rate limiting
    - Handle errors consistently
 
+## CLI Development
+
+### Running CLI Mode
+```bash
+# Development mode with CLI
+go run cmd/battleship/main.go --cli
+
+# Production mode with CLI
+go build -o battleship cmd/battleship/main.go
+./battleship --cli
+```
+
+### CLI Commands
+- `create-game`: Create a new game session
+- `join-game <game-id>`: Join an existing game
+- `place-ship <game-id> <x> <y> <direction>`: Place a ship
+- `fire <game-id> <x> <y>`: Fire at coordinates
+- `show-board <game-id>`: Display game board
+- `exit`: Exit CLI mode
+
+### Testing CLI Mode
+```bash
+# Run CLI tests
+go test ./internal/cli/...
+
+# Run with coverage
+go test -cover ./internal/cli/...
+```
+
 ## Deployment
 
 1. **Docker**
