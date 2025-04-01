@@ -15,13 +15,24 @@
 - [x] Add documentation for new structure
 
 ## Phase 3: Testing and Documentation
-- [ ] Add unit tests for all packages
+- [x] Add unit tests for game board implementation
+- [x] Add unit tests for ship handling
+- [ ] Add unit tests for remaining core game logic
 - [ ] Add integration tests
 - [ ] Update API documentation
 - [ ] Add deployment guides
 - [ ] Add monitoring setup
 
-## Phase 4: Performance and Security
+## Phase 4: CLI Mode Implementation
+- [x] Implement basic CLI interface
+- [x] Add game state visualization
+- [x] Implement command parsing
+- [x] Add ship placement commands
+- [x] Add game management commands (create, join)
+- [ ] Add game replay functionality
+- [ ] Add CLI-specific tests
+
+## Phase 5: Performance and Security
 - [ ] Implement caching layer
 - [ ] Add rate limiting
 - [ ] Implement authentication
